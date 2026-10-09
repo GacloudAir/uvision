@@ -1,0 +1,81 @@
+C51 COMPILER V9.60.7.0   SOUND                                                             10/09/2026 14:59:57 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE SOUND
+OBJECT MODULE PLACED IN .\Objects\sound.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE sound.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\sou
+                    -nd.lst) TABS(2) OBJECT(.\Objects\sound.obj)
+
+line level    source
+
+   1          #include <c8051F330.h>
+   2          
+   3          // Timer2 的 16 位 SFR
+   4          sfr16 TMR2RL = 0xca;   // Timer2 重载值
+   5          sfr16 TMR2   = 0xcc;   // Timer2 计数器
+   6          
+   7          #define SYSCLK 24500000 / 8   // 系统时钟 ≈ 3.0625 MHz
+   8          
+   9          sbit sound = P1^0;            // 蜂鸣器 / LED 接在 P1.0
+  10          
+  11          void SYSCLK_Init (void);
+  12          void PORT_Init (void);
+  13          void Timer2_Init (int counts);
+  14          void Timer2_ISR (void);
+  15          
+  16          void main (void)
+  17          {
+  18   1          PCA0MD &= ~0x40;          // 关看门狗
+  19   1          SYSCLK_Init ();           // 初始化系统时钟
+  20   1          PORT_Init ();             // 初始化端口
+  21   1          Timer2_Init (SYSCLK / 12 / 10);  // 10Hz 中断 → 每 0.1 秒翻转一次
+  22   1          EA = 1;                   // 开总中断
+  23   1          while (1) { }             // 主循环空转，等待中断
+  24   1      }
+  25          
+  26          void SYSCLK_Init (void)
+  27          {
+  28   1          OSCICN = 0x80;            // 内部振荡器 24.5MHz / 8
+  29   1          RSTSRC = 0x04;            // 使能时钟丢失检测器
+  30   1      }
+  31          
+  32          void PORT_Init (void)
+  33          {
+  34   1          XBR0 = 0x00;              // 不选数字外设
+  35   1          XBR1 = 0x40;              // 使能交叉开关和弱上拉
+  36   1          P1MDOUT |= 0x01;          // P1.0 推挽输出
+  37   1          P1SKIP  |= 0x01;          // 交叉开关跳过 P1.0
+  38   1          sound = 0;                // 初始输出低电平
+  39   1      }
+  40          
+  41          void Timer2_Init (int counts)
+  42          {
+  43   1          TMR2CN  = 0x00;           // 停止 Timer2，清 TF2，16 位自动重载
+  44   1          CKCON  &= ~0x60;          // Timer2 时钟源 = SYSCLK / 12
+  45   1          TMR2RL  = -counts;        // 重载值：从 65536-counts 数到 0xFFFF
+  46   1          TMR2    = 0xffff;         // 立即重载，第一次中断很快到来
+  47   1          ET2     = 1;              // 允许 Timer2 中断
+  48   1          TR2     = 1;              // 启动 Timer2
+  49   1      }
+  50          
+  51          void Timer2_ISR (void) interrupt 5
+  52          {
+  53   1          TF2H = 0;                 // 清 Timer2 中断标志
+  54   1          sound = ~sound;           // 翻转 P1.0
+C51 COMPILER V9.60.7.0   SOUND                                                             10/09/2026 14:59:57 PAGE 2   
+
+  55   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     73    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

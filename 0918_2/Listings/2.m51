@@ -1,0 +1,178 @@
+BL51 BANKED LINKER/LOCATER V6.22.4.0                                                    10/09/2026  14:59:58  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22.4.0, INVOKED BY:
+C:\KEIL_V5\C51\BIN\BL51.EXE .\Objects\STARTUP.obj, .\Objects\sound.obj TO .\Objects\2 PRINT (.\Listings\2.m51) RAMSIZE (
+>> 256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  .\Objects\STARTUP.obj (?C_STARTUP)
+  .\Objects\sound.obj (SOUND)
+
+
+LINK MAP OF MODULE:  .\Objects\2 (?C_STARTUP)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            IDATA   0008H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+                    0003H     0028H                  *** GAP ***
+            CODE    002BH     0003H     ABSOLUTE     
+                    002EH     07D2H                  *** GAP ***
+            CODE    0800H     001AH     UNIT         ?PR?_TIMER2_INIT?SOUND
+            CODE    081AH     0014H     UNIT         ?PR?MAIN?SOUND
+            CODE    082EH     000FH     UNIT         ?PR?PORT_INIT?SOUND
+            CODE    083DH     000CH     UNIT         ?C_C51STARTUP
+            CODE    0849H     0007H     UNIT         ?PR?SYSCLK_INIT?SOUND
+            CODE    0850H     0005H     UNIT         ?PR?TIMER2_ISR?SOUND
+
+
+
+OVERLAY MAP OF MODULE:   .\Objects\2 (?C_STARTUP)
+
+
+SEGMENT
+  +--> CALLED SEGMENT
+---------------------
+?C_C51STARTUP
+  +--> ?PR?MAIN?SOUND
+
+?PR?MAIN?SOUND
+  +--> ?PR?SYSCLK_INIT?SOUND
+  +--> ?PR?PORT_INIT?SOUND
+  +--> ?PR?_TIMER2_INIT?SOUND
+
+
+
+SYMBOL TABLE OF MODULE:  .\Objects\2 (?C_STARTUP)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+BL51 BANKED LINKER/LOCATER V6.22.4.0                                                  10/09/2026  14:59:58  PAGE 2
+
+
+  -------         MODULE        ?C_STARTUP
+  C:083DH         SEGMENT       ?C_C51STARTUP
+  I:0008H         SEGMENT       ?STACK
+  C:0000H         PUBLIC        ?C_STARTUP
+  D:00E0H         SYMBOL        ACC
+  D:00F0H         SYMBOL        B
+  D:0083H         SYMBOL        DPH
+  D:0082H         SYMBOL        DPL
+  N:0000H         SYMBOL        IBPSTACK
+  N:0100H         SYMBOL        IBPSTACKTOP
+  N:0080H         SYMBOL        IDATALEN
+  C:0840H         SYMBOL        IDATALOOP
+  N:0000H         SYMBOL        PBPSTACK
+  N:0100H         SYMBOL        PBPSTACKTOP
+  N:0000H         SYMBOL        PDATALEN
+  N:0000H         SYMBOL        PDATASTART
+  N:0000H         SYMBOL        PPAGE
+  N:0000H         SYMBOL        PPAGEENABLE
+  D:00A0H         SYMBOL        PPAGE_SFR
+  D:0081H         SYMBOL        SP
+  C:083DH         SYMBOL        STARTUP1
+  N:0000H         SYMBOL        XBPSTACK
+  N:0000H         SYMBOL        XBPSTACKTOP
+  N:0000H         SYMBOL        XDATALEN
+  N:0000H         SYMBOL        XDATASTART
+  C:0000H         LINE#         126
+  C:083DH         LINE#         133
+  C:083FH         LINE#         134
+  C:0840H         LINE#         135
+  C:0841H         LINE#         136
+  C:0843H         LINE#         185
+  C:0846H         LINE#         196
+  -------         ENDMOD        ?C_STARTUP
+
+  -------         MODULE        SOUND
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:0090H         PUBLIC        P1
+  C:0850H         PUBLIC        Timer2_ISR
+  B:00A8H.7       PUBLIC        EA
+  D:00A5H         PUBLIC        P1MDOUT
+  B:00C8H.7       PUBLIC        TF2H
+  D:00D9H         PUBLIC        PCA0MD
+  D:00E1H         PUBLIC        XBR0
+  D:00E2H         PUBLIC        XBR1
+  D:00CCH         PUBLIC        TMR2
+  C:081AH         PUBLIC        main
+  B:0090H.0       PUBLIC        sound
+  C:0800H         PUBLIC        _Timer2_Init
+  D:00C8H         PUBLIC        TMR2CN
+  D:00D5H         PUBLIC        P1SKIP
+  C:082EH         PUBLIC        PORT_Init
+  D:00B2H         PUBLIC        OSCICN
+  D:00CAH         PUBLIC        TMR2RL
+  B:00A8H.5       PUBLIC        ET2
+  C:0849H         PUBLIC        SYSCLK_Init
+  B:00C8H.2       PUBLIC        TR2
+  D:00EFH         PUBLIC        RSTSRC
+BL51 BANKED LINKER/LOCATER V6.22.4.0                                                  10/09/2026  14:59:58  PAGE 3
+
+
+  D:008EH         PUBLIC        CKCON
+  -------         PROC          MAIN
+  C:081AH         LINE#         16
+  C:081AH         LINE#         17
+  C:081AH         LINE#         18
+  C:081DH         LINE#         19
+  C:0820H         LINE#         20
+  C:0823H         LINE#         21
+  C:082AH         LINE#         22
+  C:082CH         LINE#         23
+  -------         ENDPROC       MAIN
+  -------         PROC          SYSCLK_INIT
+  C:0849H         LINE#         26
+  C:0849H         LINE#         27
+  C:0849H         LINE#         28
+  C:084CH         LINE#         29
+  C:084FH         LINE#         30
+  -------         ENDPROC       SYSCLK_INIT
+  -------         PROC          PORT_INIT
+  C:082EH         LINE#         32
+  C:082EH         LINE#         33
+  C:082EH         LINE#         34
+  C:0831H         LINE#         35
+  C:0834H         LINE#         36
+  C:0837H         LINE#         37
+  C:083AH         LINE#         38
+  C:083CH         LINE#         39
+  -------         ENDPROC       PORT_INIT
+  -------         PROC          _TIMER2_INIT
+  D:0006H         SYMBOL        counts
+  C:0800H         LINE#         41
+  C:0800H         LINE#         42
+  C:0800H         LINE#         43
+  C:0803H         LINE#         44
+  C:0806H         LINE#         45
+  C:080FH         LINE#         46
+  C:0815H         LINE#         47
+  C:0817H         LINE#         48
+  C:0819H         LINE#         49
+  -------         ENDPROC       _TIMER2_INIT
+  -------         PROC          TIMER2_ISR
+  C:0850H         LINE#         51
+  C:0850H         LINE#         53
+  C:0852H         LINE#         54
+  C:0854H         LINE#         55
+  -------         ENDPROC       TIMER2_ISR
+  -------         ENDMOD        SOUND
+
+******************************************************************************
+* RESTRICTED VERSION WITH 0800H BYTE CODE SIZE LIMIT; USED: 005BH BYTE ( 4%) *
+******************************************************************************
+
+Program Size: data=9.0 xdata=0 code=91
+LINK/LOCATE RUN COMPLETE.  0 WARNING(S),  0 ERROR(S)
