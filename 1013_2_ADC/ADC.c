@@ -51,7 +51,7 @@ void main (void)
     UART0_Init ();                     // 初始化 UART0
     ADC0_Init ();                      // 初始化 ADC0（含内部全校准，结束时处于 IDLE）
 
-    printf("F350 ADC0 ready.\r\n");    // 上电自检输出（串口配置正确时必然能看到这行）
+    printf("F350 ADC0 ready. [build 1014]\r\n");    // 上电自检输出（含版本标记，便于对照固件版本）
 
     AD0INT = 0;                        // 清除可能挂起的转换完成标志
     ADC0MD = 0x83;                     // AD0EN=1，AD0SM[2:0]=011 → 启动连续转换
@@ -213,7 +213,7 @@ void ADC0_ISR (void) interrupt 10
         // （官方例程同款整数算法，避免引入浮点库、节省 Flash）
         mV = result / 6710;
 
-        printf("ADC voltage: %lu mV\n", mV);
+        printf("ADC voltage: %lu mV [raw %lu]\n", mV, result);
         LED = !LED;                    // 翻转 LED，指示更新
     }
 }
