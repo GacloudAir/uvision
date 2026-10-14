@@ -191,6 +191,7 @@ void ADC0_ISR (void) interrupt 10
     unsigned long result;
     unsigned long mV;
 
+    while (!AD0INT);                   // 等待转换完成标志置位（与官方例程一致，防临界情况）
     AD0INT = 0;                        // 清除转换完成标志
 
     // 读取 24 位 SINC3 结果（ADC0H/M/L，单极性）
