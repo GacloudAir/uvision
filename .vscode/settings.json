@@ -1,0 +1,11 @@
+{
+  // ============ Keil C51 工程专用设置 ============
+  // Keil C51 源码使用了 sbit / sfr / interrupt / code 等非标准语法，
+  // VS Code 的 C/C++ 扩展（cpptools）按标准 C 解析会产生大量误报（红色波浪线）。
+  // 本工作区的例程一律以 Keil uVision 的编译结果为准，
+  // 因此关闭 C/C++ 扩展的智能解析与错误提示（语法着色、Git 功能不受影响）。
+  //
+  // 如需恢复：“disabled” 分别改为 “default” / “enabled” 即可。
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.errorSquiggles": "disabled"
+}
