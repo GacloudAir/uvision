@@ -73,7 +73,8 @@
 static void gpio_init(void)
 {
     RCC->APB2ENR |= (1U << 2) | (1U << 4);   /* GPIOA + GPIOC 时钟 */
-
+    GPIOA->ODR &=~(0xFF);
+    GPIOA->ODR |=(0x8<<1)|(0x);
     /* 你的代码： */
 }
 

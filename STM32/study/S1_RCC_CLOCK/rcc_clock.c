@@ -38,12 +38,6 @@
  *
  *    ⚠ 这就是"为什么 PSC=0 时 TIM2 是 72MHz 而不是 36MHz"。
  *      你 Lab2/Lab4 里所有 f_cnt=72MHz 的算法，都是靠这一条成立的。
- *
- *    ⚠ 前提：这些值不是"天生"的，是启动文件调用 SystemInit() 配出来的。
- *      本工程 RTE/Device/STM32F103C8/system_stm32f10x.c 里定义了
- *      `#define SYSCLK_FREQ_72MHz`，所以上电后才是 72MHz。
- *      如果哪天换了工程、没跑 SystemInit，默认只有 HSI 8MHz —— 全部频率作废。
- *      → 用 T1 的 Watch 窗口亲眼确认一次，比背答案可靠。
  *  ---------------------------------------------------------------------------
  *
  *  ===== 任务 =====
@@ -54,7 +48,6 @@
  *        甲组：以为 f_cnt = PCLK1 = 36MHz
  *        乙组：以为 f_cnt = PCLK1×2 = 72MHz
  *      下载观察哪一组真的是 1Hz → 用实验证明"定时器时钟×2"。
- *      ★ 关键：中断里"翻转一次"只产生半个周期！见 T2 处的说明。
  *  T3：故意复现你踩过的坑：先配 GPIOA 引脚、但**不开** GPIOA 时钟，
  *      看 LED 是否还闪（并想一想：为什么"不报错、但没反应"？）
  *
@@ -62,7 +55,6 @@
  *    RCC->CR      HSIRDY / HSERDY / PLLRDY（时钟是否就绪）
  *    RCC->CFGR    SWS[3:2] 系统时钟源；HPRE[7:4]；PPRE1[10:8]；PPRE2[13:11]；PLLMUL[21:18]
  *    RCC->APB2ENR / APB1ENR   外设时钟门控
- *    TIM2->PSC/ARR/DIER/SR/CR1/EGR
  *
  *  ===== 思考题 =====
  *  Q1：为什么 STM32 要"每个外设一个时钟开关"，而 8051 不用？
@@ -75,12 +67,6 @@
 
 #include "stm32f10x.h"
 
-/* ===========================================================================
- * 【实验开关】改这两个 0/1 就能切换实验，不用手抄数字
- * ========================================================================= */
-#define USE_GROUP_B        1   /* 1=乙组(按72MHz算)  0=甲组(按36MHz算) */
-#define T3_NO_GPIOC_CLOCK  0   /* 1=故意不开 GPIOC 时钟，复现"没反应"的坑 */
-
 /* ---------------------------------------------------------------------------
  *  TODO T1：读出并手算各级时钟频率
  *    提示：
@@ -89,120 +75,74 @@
  *        AHB:  0xxx=1, 1000=2, 1001=4, 1010=8, 1011=16, 1100=64, 1101=128, 1110=256, 1111=512
  *        APB:  0xx=1, 100=2, 101=4, 110=8, 111=16
  *
- *    把结果填在下面（先用纸算，再用代码验证）：       ← 你的答案：全部正确 ✓
+ *    把结果填在下面（先用纸算，再用代码验证）：
  *      SYSCLK = ___72___ MHz
  *      HCLK   = ___72___ MHz
  *      PCLK2  = ___72___ MHz
  *      PCLK1  = ___36___ MHz
  *      TIM2 计数时钟 = ___72___ MHz      ★ 注意"×2"规则
- *
- *    预期在 Watch 里看到的"原始编码值"（先自己推，再看）：
- *      sws   = 2     (10 = PLL)
- *      hpre  = 0     (0xxx = 1 分频)
- *      ppre1 = 4     (100 = 2 分频)   ← 正是这个"≠0"触发了定时器时钟 ×2
- *      ppre2 = 0     (0xx  = 1 分频)
  * ------------------------------------------------------------------------- */
-
-/* 编码 → 实际分频倍数的查表（RM0008 的表，不是"数值=分频"！） */
-static const uint16_t ahb_div_lut[16] = {1,1,1,1,1,1,1,1, 2,4,8,16, 64,128,256,512};
-static const uint16_t apb_div_lut[8]  = {1,1,1,1, 2,4,8,16};
-
 static void clock_report(void)
 {
-    volatile uint32_t cfgr  = RCC->CFGR;
-    volatile uint32_t sws   = (cfgr >> 2)  & 0x3U;
-    volatile uint32_t hpre  = (cfgr >> 4)  & 0xFU;
-    volatile uint32_t ppre1 = (cfgr >> 8)  & 0x7U;
+    /* 你的代码：读 RCC->CFGR，把各级分频解出来。
+     * （本 Lab 没有串口，可以用 Keil 调试的 Watch 窗口直接看这几个变量） */
+    volatile uint32_t cfgr = RCC->CFGR;
+    volatile uint32_t sws  = (cfgr >> 2) & 0x3U;
+    volatile uint32_t hpre = (cfgr >> 4) & 0xFU;
+    volatile uint32_t ppre1 = (cfgr >> 8) & 0x7U;
     volatile uint32_t ppre2 = (cfgr >> 11) & 0x7U;
 
-    /* 【修正】上面只读了"编码"，还没算成频率。
-     * 下面把它真正算成 MHz，Watch 里直接看数字，跟你的手算对照。 */
-    volatile uint32_t sysclk_hz = SystemCoreClock;              /* SystemInit() 写入的 72000000 */
-    volatile uint32_t hclk_hz   = sysclk_hz / ahb_div_lut[hpre];
-    volatile uint32_t pclk1_hz  = hclk_hz   / apb_div_lut[ppre1];
-    volatile uint32_t pclk2_hz  = hclk_hz   / apb_div_lut[ppre2];
-
-    /* ★★ 本 Lab 的主角：APB1 预分频 ≠ 1 时，定时器时钟自动 ×2 */
-    volatile uint32_t tim2_hz = (ppre1 == 0) ? pclk1_hz : (pclk1_hz * 2U);
-
-    /* 预期：sysclk=72M  hclk=72M  pclk1=36M  pclk2=72M  tim2=72M */
-    (void)sws; (void)hpre; (void)ppre1; (void)ppre2;
-    (void)sysclk_hz; (void)hclk_hz; (void)pclk1_hz; (void)pclk2_hz; (void)tim2_hz;
+    (void)sws; (void)hpre; (void)ppre1; (void)ppre2;   /* ← 在 Watch 里看它们 */
 }
 
 /* ---------------------------------------------------------------------------
  *  TODO T2：用 TIM2 产生 1Hz 方波，PC13 上的 LED 每秒闪一次
+ *    f_out = f_cnt / ((PSC+1) × (ARR+1))
+ *    1Hz 时 (PSC+1)×(ARR+1) = f_cnt / 1
  *
- *    f_更新 = f_cnt / ((PSC+1) × (ARR+1))       ← 这是"溢出/进中断"的频率
+ *    甲组（假设 f_cnt = 36MHz）：PSC = __5999__ , ARR = __5999__
+ *    乙组（假设 f_cnt = 72MHz）：PSC = __11999__ , ARR = __5999__
+ *    （两组都要满足 ARR ≤ 65535、PSC ≤ 65535）
  *
- *    ★★【修正·最关键的一条】★★
- *    中断里"翻转一次"只产生【半个方波周期】！
- *        翻转 → 灭 → 翻转 → 亮 …… 一次完整亮灭需要【两次】更新中断。
- *    所以：f_方波 = f_更新 / 2
- *    想要 1Hz 方波（1 秒亮一次、1 秒一个完整周期）→ 更新率必须是 **2Hz**
- *    → (PSC+1)×(ARR+1) = f_cnt / 2
- *
- *    甲组（假设 f_cnt=36MHz）：需 18,000,000 = 6000×3000 → PSC=2999, ARR=5999
- *    乙组（假设 f_cnt=72MHz）：需 36,000,000 = 6000×6000 → PSC=5999, ARR=5999
- *
- *    你原来填的 (5999,5999) / (11999,5999) 是按"更新率=1Hz"算的，
- *    没有除以 2 —— 数值本身没错，但会得到 2 秒周期的闪灯。
- *
- *    下载后怎么判胜负（数 10 秒）：
- *      乙组 PSC=5999 ARR=5999  → 实际 f_cnt=72MHz → 更新率 2Hz → 1Hz 闪烁 → 10 秒闪 **10 次** ✓
- *      甲组 PSC=2999 ARR=5999  → 若真是 36MHz 才对；实际 72MHz → 更新率 4Hz → 2Hz 闪烁 → 10 秒闪 **20 次** ✗
- *    → 看到"比预期快一倍"，就证明了 TIM2 的时钟是 PCLK1×2=72MHz。
- *
- *    硬件接线提醒：蓝板 PC13 的 LED 是【低电平点亮】（共阳接法），
- *    所以 ODR 复位值 0 时灯是【亮】的。下面初始化时先置高让它灭，闪起来更好数。
+ *    你要做的：
+ *      - 开 TIM2 时钟（APB1）、开 GPIOC 时钟（APB2）
+ *      - 配 PC13 为复用推挽（TIM2 不直接驱动 PC13！想一想这里该用什么方式）
+ *        ★ 提示：PC13 不是 TIM2 的通道引脚，所以这里不能用 PWM 输出。
+ *          改用"更新中断 + 中断里翻转 PC13"最简单。
+ *      - 配 PSC/ARR、开更新中断(UIE)、配 NVIC、启动
  * ------------------------------------------------------------------------- */
 static void blink_1hz_init(uint16_t psc, uint16_t arr)
 {
-    /* ① 开外设时钟 —— 顺序无所谓，但【必须】在碰任何寄存器之前 */
-#if T3_NO_GPIOC_CLOCK
-    /* T3：故意不开 —— 编译照样通过，下载也照样跑，但灯永远不闪 */
-#else
-    RCC->APB2ENR |= (1U << 4);      /* GPIOC 挂在 APB2，ENR bit4 = IOPCEN */
-#endif
-    RCC->APB1ENR |= (1U << 0);      /* TIM2 挂在 APB1，ENR bit0 = TIM2EN */
-
-    /* ② PC13 输出配置
-     * 【修正】原来用的 0xB（复用推挽）是错的：
-     *   0xB = "把这个脚交给片上外设（定时器/串口…）驱动"，
-     *   但 PC13 上根本没有 TIM2 的复用通道 → 引脚被交给一个不存在的东西，ODR 不再生效。
-     *   这里我们要的是"CPU 直接写 ODR 控制" → 用【通用推挽】。
-     *   0x2 = 通用推挽 2MHz（PC13 是弱驱动脚，手册建议 ≤2MHz，别用 50MHz 的 0x3）
-     *   CRH 里 pin13 的位置 = (13-8)*4 = 20  ← 这个你算对了 ✓ */
-    GPIOC->CRH &= ~(0xFU << 20);
-    GPIOC->CRH |=  (0x2U << 20);
-    GPIOC->BSRR =  (1U << 13);      /* 先置高 = 灭灯（低电平点亮） */
-
-    /* ③ 配 TIM2
-     * 【修正】你原来这里只配了 GPIO，psc/arr 收进来却没写进寄存器
-     *        （编译器就报了那 2 个 unused parameter 警告 —— 那是它在喊你）。
-     *        而且没开 UIE、没开 NVIC、没启动 CEN → 定时器根本没跑。 */
-    TIM2->CR1 &= ~(1U << 0);        /* 配之前先停表（CEN=0），避免配到一半乱跑 */
-    TIM2->PSC  = psc;
-    TIM2->ARR  = arr;
-
-    /* PSC/ARR 都带"影子寄存器"，写入后要一次更新事件才真正生效 */
-    TIM2->EGR |= (1U << 0);         /* UG=1：手动产生更新事件，立刻装载 PSC/ARR */
-    TIM2->SR  &= ~(1U << 0);        /* UG 会顺手把 UIF 置 1，先清掉，否则刚开中断就白进一次 */
-
-    TIM2->DIER |= (1U << 0);        /* UIE：允许更新中断 */
-    NVIC_EnableIRQ(TIM2_IRQn);      /* 【修正】NVIC 那边也要放行，否则中断进不来 */
-    TIM2->CR1 |= (1U << 0);         /* CEN=1：启动计数 */
+    RCC->APB2ENR |= (1U << 4);//APB2ENR主要管理GPIOA/B/C时钟,分别在2,3,4号寄存器管控开关
+    RCC->APB1ENR |= (1U << 0);//启动Tim2时钟
+    GPIOC->CRH &= ~(0xFU << ((13 - 8) * 4)); /* PC13 → CRH，POS = (13-8)*4 = 20 */
+    GPIOC->CRH |=  (0x3U << ((13 - 8) * 4)); /* ⚠ 0x3=通用推挽输出(ODR可控)。
+                                                  文件头 TODO 写的"复用推挽0xB"是错的：
+                                                  PC13 没有映射任何外设，用 0xB 时 ODR 翻转无效 */
+    TIM2->PSC = psc;   /* ⚠ 此处注释"不分频"不准：PSC=5999 是大幅预分频。
+                        *   准确说法：定时器"输入时钟" f_cnt 仍是 72MHz（×2 规则成立的根本），
+                        *   PSC 只是把 72MHz 往下分频得到 1Hz；1 tick=13.9ns 指 f_cnt 的周期。
+                        *   另：PSC 预分频值在下个更新事件(UEV)才装入活动寄存器，
+                        *       上电首个周期会短暂以 PSC=0 运行(对 1Hz 实验无感) */
+    TIM2->ARR = arr;
+    TIM2->DIER |= (1U<<0);   // ⚠ 上一版此行缺 ';' 会编译报错；UIE=更新中断使能
+    NVIC_SetPriority((IRQn_Type)28, 0); /* STM32F103 TIM2 IRQ number */
+    NVIC_EnableIRQ((IRQn_Type)28);
+    TIM2->CR1 |= (1U<<0);    // ⚠ 上一版此行缺 ';' 会编译报错；CEN=计数器使能(启动定时)
 }
 
 int main(void)
 {
     clock_report();
 
-    /* 先试乙组，再改 USE_GROUP_B=0 试甲组，对比 10 秒闪几次 */
-    blink_1hz_init(5999, 5999);     /* 乙组：按 72MHz 算 → 应该是 1Hz */
+    /* 先试甲组（36MHz 假设），下载数 10 秒看闪了几次；再换成乙组对比 */
+    blink_1hz_init(5999, 5999);        /* ← 换成你算出的值 */
+
+    /* ⚠ T3 尚未实现：文件头 T3 要求"故意不开 GPIOA 时钟，看引脚是否还闪"。
+       可另写 demo：配 PA 引脚(设 0x3)但不开 RCC->APB2ENR 的 GPIOA 位(bit2)，
+       观察"不报错却没输出"——体会时钟门控的坑 */
     while (1)
     {
-        
     }
 }
 
@@ -211,12 +151,10 @@ int main(void)
  * ------------------------------------------------------------------------- */
 void TIM2_IRQHandler(void)
 {
-    /* 【修正·致命】原来是 while(1) —— 中断服务函数里写死循环 = 进得去出不来，
-     * 主程序永远停在这一行，看起来就像"单片机死机"。
-     * ISR 的铁律：进来 → 判断 → 处理 → 清标志 → 【退出】。绝不能循环等待。 */
-    if (TIM2->SR & (1U << 0))       /* UIF：更新中断标志 */
-    {
-        TIM2->SR &= ~(1U << 0);     /* 清标志（不清会一直重复进中断） */
-        GPIOC->ODR ^= (1U << 13);   /* 翻转 PC13 —— ODR 读回来是真实电平，可以 ^= */
-    }
+    /* 你的代码：判断 UIF → 翻转 PC13 → 清标志 */
+        if (TIM2->SR & (1U << 0)) //检查更新中断标志位
+        {
+            TIM2->SR &= ~(1U << 0); //清除标志位
+            GPIOC->ODR ^= (1U << 13); //翻转PC13
+        }
 }
