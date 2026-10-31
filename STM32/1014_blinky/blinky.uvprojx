@@ -385,9 +385,9 @@
           <GroupName>Source Group 1</GroupName>
           <Files>
             <File>
-              <FileName>timing_target.c</FileName>
+              <FileName>UART&amp;DMA.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\timing_target.c</FilePath>
+              <FilePath>..\..\..\STM32\firmware\1014_blinky\UART&amp;DMA.c</FilePath>
             </File>
           </Files>
         </Group>
