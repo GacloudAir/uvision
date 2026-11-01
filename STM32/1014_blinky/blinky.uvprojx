@@ -385,9 +385,9 @@
           <GroupName>Source Group 1</GroupName>
           <Files>
             <File>
-              <FileName>UART&amp;DMA.c</FileName>
+              <FileName>ADC.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\STM32\firmware\1014_blinky\UART&amp;DMA.c</FilePath>
+              <FilePath>..\..\..\STM32\firmware\1014_blinky\ADC.c</FilePath>
             </File>
           </Files>
         </Group>

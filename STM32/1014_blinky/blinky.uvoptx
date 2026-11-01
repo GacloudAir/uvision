@@ -221,8 +221,8 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\STM32\firmware\1014_blinky\UART&amp;DMA.c</PathWithFileName>
-      <FilenameWithoutPath>UART&amp;DMA.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\STM32\firmware\1014_blinky\ADC.c</PathWithFileName>
+      <FilenameWithoutPath>ADC.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
